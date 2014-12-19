@@ -594,18 +594,33 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
 
   system_progress = 0.75
 
-  script.Print("                    _____________________ ")
-  script.Print("                   /     www.slimroms.net|")
-  script.Print("                  /                      |")
-  script.Print("                 /    ___________________|")
-  script.Print("                /    /    ___             ")
-  script.Print("               /    / ___/   \            ")
-  script.Print("              /    / /   \___/____   ____ ")
-  script.Print("             /    /  |   |___/    \_/    |")
-  script.Print(" ___________/    /   |   |   |           |")
-  script.Print("|               /    |   |   |   |   |   |")
-  script.Print("|              /     |   |   |   |   |   |")
-  script.Print("|_____________/      \___^___^___^___^___/")
+  script.Print(" ")
+  script.Print(" ***************Its*a*ROM**************** ")
+  script.Print(" ***********Its*a*way*of*life************ ")
+  script.Print(" *************Its,*Its,*Its..************ ")
+  script.Print(" ........................................ ")
+  script.Print(" . ___...___...._...._..._..___...__.._.. ")
+  script.Print(" .| . \.| . \../ \..| |/ /.| __|.|  \| |. ")
+  script.Print(" .|   /.|   /.| . |.|   /..|   |.|     |. ")
+  script.Print(" .| B \.| R \.| O |.| K \..| E_|.|  N  |. ")
+  script.Print(" .| .  ||_|\_\.\ /..|_|\_\.|___|.|_| \_|. ")
+  script.Print(" .|___/.................................. ")
+  script.Print(" .._________....._______.....________.... ")
+  script.Print(" .| _  /  \ \.../\_   / \...|\  _/  /\... ")
+  script.Print(" .|/ \/ P  _|..|   \O_\  |..| \/ P /\|... ")
+  script.Print(" .| / \___/_/..|   /   \ |..|  \ ____/... ")
+  script.Print(" .|  _|........|__/\   / |..| _/|........ ")
+  script.Print(" .|_/_|.........\_____/_/...|_\_|........ ")
+  script.Print(" .................//..................... ")
+  script.Print(" ..A.............//...................... ")
+  script.Print(" ..Custom.......//.........BrokenOs...... ")
+  script.Print(" ..AOSP........//.........Android 5.0.... ")
+  script.Print(" ..Based...................Lollipop...... ")
+  script.Print(" ..ROM................................... ")
+  script.Print(" ........................................ ")
+  script.Print(" **********Dysfunctional**ROMs*********** ")
+  script.Print(" ***********More*fun*than*iOs************ ")
+  script.Print(" ********Now*Get*On*With*The*Show******** ")
   script.Print(" ")
 
   if OPTIONS.wipe_user_data:
@@ -741,7 +756,7 @@ endif;
   script.AddToZip(input_zip, output_zip, input_path=OPTIONS.updater_binary)
   WriteMetadata(metadata, output_zip)
 
-  common.ZipWriteStr(output_zip, "META-INF/org/slimroms/releasekey",
+  common.ZipWriteStr(output_zip, "META-INF/org/brokenos/releasekey",
                      ""+input_zip.read("META/releasekey.txt"))
 
 def WritePolicyConfig(file_context, output_zip):

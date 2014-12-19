@@ -17,7 +17,7 @@ endif
 LOCAL_PATH := $(BUILD_SYSTEM)
 
 # Pick a reasonable string to use to identify files.
-ifneq ($(SLIM_BUILD),)
+ifneq ($(BROKEN_BUILD),)
 ifneq "" "$(filter eng.%,$(BUILD_NUMBER))"
   # BUILD_NUMBER has a timestamp in it, which means that
   # it will change every time.  Pick a stable value.
@@ -210,7 +210,7 @@ ifneq ($(PRODUCTS.$(INTERNAL_PRODUCT).PRODUCT_OEM_PROPERTIES),)
 endif
 	$(hide) TARGET_BUILD_TYPE="$(TARGET_BUILD_VARIANT)" \
 			TARGET_DEVICE="$(TARGET_DEVICE)" \
-			SLIM_DEVICE="$(TARGET_DEVICE)" \
+			BROKEN_DEVICE="$(TARGET_DEVICE)" \
 			PRODUCT_NAME="$(TARGET_PRODUCT)" \
 			PRODUCT_BRAND="$(PRODUCT_BRAND)" \
 			PRODUCT_DEFAULT_LANGUAGE="$(call default-locale-language,$(PRODUCT_LOCALES))" \
@@ -988,7 +988,13 @@ INTERNAL_SYSTEMIMAGE_FILES := $(filter $(TARGET_OUT)/%, \
     $(PDK_FUSION_SYSIMG_FILES) \
     $(RECOVERY_RESOURCE_ZIP))
 
-FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
+systemimage-squisher: $(INTERNAL_SYSTEMIMAGE_FILES)
+	@echo -e "Optimizing PNGs to Shrink ROM Size!"
+	$(hide) APKCERTS=$(APKCERTS_FILE) ./vendor/broken/tools/squisher
+
+.PHONY: systemimage-squisher
+
+FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS) systemimage-squisher
 # -----------------------------------------------------------------
 # installed file list
 # Depending on anything that $(BUILT_SYSTEMIMAGE) depends on.
@@ -1611,7 +1617,7 @@ KERNEL_PATH := $(TARGET_KERNEL_SOURCE)/arch/arm/configs/$(TARGET_KERNEL_CONFIG)
 ifeq ($(WITH_GMS),true)
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
 else
-ifneq ($(SLIM_BUILD),)
+ifneq ($(BROKEN_BUILD),)
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := true
 else
     $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
@@ -1624,8 +1630,8 @@ else
     $(INTERNAL_OTA_PACKAGE_TARGET): override_prop := true
 endif
 
-ifneq ($(SLIM_BUILD),)
-SLIM_TARGET_PACKAGE := $(PRODUCT_OUT)/$(SLIM_MOD_VERSION).zip
+ifneq ($(BROKEN_BUILD),)
+BROKEN_TARGET_PACKAGE := $(PRODUCT_OUT)/$(BROKEN_MOD_VERSION).zip
 endif
 
 ifeq ($(TARGET_OTA_ASSERT_DEVICE),)
@@ -1641,7 +1647,7 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	$(hide) MKBOOTIMG=$(MKBOOTIMG) \
 	   CUSTOM_BOOTING_MK=$(BOARD_CUSTOM_BOOTIMG_MK) \
 	   $(OTA_FROM_TARGET_SCRIPT) -v \
-	   $(if $(SLIM_BUILD), --block) \
+	   $(if $(BROKEN_BUILD), --block) \
 	   -p $(HOST_OUT) \
 	   -k $(KEY_CERT_PAIR) \
 	   $(if $(OEM_OTA_CONFIG), -o $(OEM_OTA_CONFIG)) \
@@ -1649,17 +1655,43 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	   --override_prop=$(override_prop) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
 
-.PHONY: otapackage bacon bootzip
+.PHONY: otapackage broken bootzip
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
 
-bacon: check_bacon otapackage
-ifneq ($(SLIM_BUILD),)
-	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(SLIM_TARGET_PACKAGE)
-	$(hide) $(MD5SUM) $(SLIM_TARGET_PACKAGE) > $(SLIM_TARGET_PACKAGE).md5sum
-	@echo -e "Package Complete: $(SLIM_TARGET_PACKAGE)"
+broken: check_broken otapackage
+ifneq ($(BROKEN_BUILD),)
+	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(BROKEN_TARGET_PACKAGE)
+	$(hide) $(MD5SUM) $(BROKEN_TARGET_PACKAGE) > $(BROKEN_TARGET_PACKAGE).md5sum
+	@echo -e ${CL_CYN}""${CL_CYN}
+	@echo -e ${CL_CYN}"........................................................................................."${CL_CYN}
+	@echo -e ${CL_CYN}".....__________.....________.....________.....___...____...________....______...____....."${CL_CYN}
+	@echo -e ${CL_CYN}"....|    /  _   \..|  _\  / \.../  \   /  \..| _||./\  /..|  ___/__|..|  /   \.|  \ |...."${CL_CYN}
+	@echo -e ${CL_CYN}"....|   / \/    |..|\/   /\  |.|    \     _|.| \ |/  \/...|  |____....|  \_   \|  / |...."${CL_CYN}
+	@echo -e ${CL_CYN}"....|    \/     /..| \  /   /..|/    /\/ / |.|  \/   /....|\_ \   |...|  / \__  _/  |...."${CL_CYN}
+	@echo -e ${CL_CYN}"....| \__ \    /...| /\/ \ /...|   _/  \/  |.|    \  \....|  \/___|...|    /  \/    |...."${CL_CYN}
+	@echo -e ${CL_CYN}"....|    \/\   \...|/    / \...|  /  \     |.|/   /   \...|  / |____..|   / |\ \__  |...."${CL_CYN}
+	@echo -e ${CL_CYN}"....|    /_   _/\..|   |\   \..|      \    |.|\  |\    \..|  \   \_ |.|  /  |.\   \ |...."${CL_CYN}
+	@echo -e ${CL_CYN}"....|    /\  /   |.|___|.\_/_\..\_____/___/..|_\_|.\___/\.|___\_____|.|__\__|..\__ ||...."${CL_CYN}
+	@echo -e ${CL_CYN}"....|\__/   \    |..._________....._______.....________...........\_____________/........"${CL_CYN}
+	@echo -e ${CL_CYN}"....|       /\   |..| _  /  \ \.../\_   / \...|\  _/  /\........../  .       .  \........"${CL_CYN}
+	@echo -e ${CL_CYN}"....|      /  \  |..|/ \/    _/|.|   \__\  |..| \/ \_/\ |......__/_______________\__....."${CL_CYN}
+	@echo -e ${CL_CYN}"....|  /\_/   /  |..|   \___/_/..|   /   \ |..|  \ ____/......| .                 . |...."${CL_CYN}
+	@echo -e ${CL_CYN}"....| /    \     /..|   |........|__/\   / |..| _/|...........|_|_________________|_|...."${CL_CYN}
+	@echo -e ${CL_CYN}"....|_______\___/...|___|.........\_____/_/...|_\_|............\|                 |/....."${CL_CYN}
+	@echo -e ${CL_CYN}"................................................................|________|________|......"${CL_CYN}
+	@echo -e ${CL_CYN}"................................................................|________|________|......"${CL_CYN}
+	@echo -e ${CL_CYN}"................................................................|__/__\__|__/__\__|......"${CL_CYN}
+	@echo -e ${CL_CYN}"........................................................................................."${CL_CYN}
+	@echo -e ${CL_RST}""${CL_RST}
+	@echo -e ${CL_YLW}"................................Shits Done......Getcha Some.............................."${CL_YLW}
+	@echo -e ${CL_YLW}".....................................More fun Than iOs..................................."${CL_YLW}
+	@echo -e ${CL_RST}""${CL_RST}
+	@echo -e ${CL_BLU}"========================================================================================="${CL_BLU}
+	@echo -e ${CL_RST}"$(BROKEN_TARGET_PACKAGE)"${CL_RST}
+	@echo -e ${CL_BLU}"========================================================================================="${CL_BLU}
 endif
 
-check_bacon:
+check_broken:
 ifneq ($(TARGET_CUSTOM_RELEASETOOL),)
         $(error TARGET_CUSTOM_RELEASETOOL is deprecated)
 endif
