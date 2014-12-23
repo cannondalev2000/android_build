@@ -1655,11 +1655,10 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	   --override_prop=$(override_prop) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
 
-.PHONY: otapackage broken bootzip
+.PHONY: otapackage broken
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
 
-broken: check_broken otapackage
-ifneq ($(BROKEN_BUILD),)
+broken: otapackage
 	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(BROKEN_TARGET_PACKAGE)
 	$(hide) $(MD5SUM) $(BROKEN_TARGET_PACKAGE) > $(BROKEN_TARGET_PACKAGE).md5sum
 	@echo -e ${CL_CYN}""${CL_CYN}
@@ -1689,23 +1688,11 @@ ifneq ($(BROKEN_BUILD),)
 	@echo -e ${CL_BLU}"========================================================================================="${CL_BLU}
 	@echo -e ${CL_RST}"$(BROKEN_TARGET_PACKAGE)"${CL_RST}
 	@echo -e ${CL_BLU}"========================================================================================="${CL_BLU}
-endif
-
-check_broken:
-ifneq ($(TARGET_CUSTOM_RELEASETOOL),)
-        $(error TARGET_CUSTOM_RELEASETOOL is deprecated)
-endif
-
-bootzip: bootimage
-	$(BOOT_ZIP_FROM_IMAGE_SCRIPT) \
-	   $(recovery_fstab) \
-	   $(OUT) \
-	   $(TARGET_DEVICE)
 
 ifeq ($(USE_PREBUILT_CHROMIUM),1)
 ifneq ($(PRODUCT_PREBUILT_WEBVIEWCHROMIUM),yes)
 	@echo "Running Chromium prebuilt setup script..."
-	$(hide) . $(TOPDIR)vendor/pac/tools/chromium_prebuilt.sh $(TOP)
+	$(hide) . $(TOPDIR)vendor/broken/tools/chromium_prebuilt.sh $(TOP)
 endif
 endif
 
