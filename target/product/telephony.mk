@@ -20,6 +20,7 @@
 PRODUCT_PACKAGES := \
     Dialer \
     Mms \
+    InCallUI \
     rild
 
 PRODUCT_COPY_FILES := \
