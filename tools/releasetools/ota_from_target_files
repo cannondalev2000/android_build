@@ -605,13 +605,11 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
   script.Print(" .| _  /  \ \.../\_   / \...|\  _/  /\... ")
   script.Print(" .|/ \/ P  _|..|   \O_\  |..| \/ P /\|... ")
   script.Print(" .| / \___/_/..|   /   \ |..|  \ ____/... ")
-  script.Print(" .|  _|........|__/\   / |..| _/|........ ")
-  script.Print(" .|_/_|.........\_____/_/...|_\_|........ ")
+  script.Print(" .|___|.........\__/____/...|__/|........ ")
   script.Print(" ..A Custom.....//.........BrokenOs...... ")
   script.Print(" ..AOSP.Based..//.........Android 5.0.... ")
   script.Print(" ..ROM........//...........Lollipop...... ")
   script.Print(" **********Dysfunctional**ROMs*********** ")
-  script.Print(" ********Now*Get*On*With*The*Show******** ")
   script.Print(" ")
 
   if OPTIONS.wipe_user_data:
