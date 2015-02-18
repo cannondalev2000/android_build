@@ -1692,8 +1692,8 @@ broken: otapackage
 	@echo -e ${CL_CYN}"...................................Brokenpop....................................."${CL_CYN}
 	@echo -e ${CL_CYN}"..........................Based on Android 5.0 Lollipop.........................."${CL_CYN}
 	@echo -e ${CL_RST}""${CL_RST}
-	@echo -e ${CL_YLW}"...........................Shits Done......Getcha Some..........................."${CL_YLW}
-	@echo -e ${CL_YLW}"................................More fun Than iOs................................"${CL_YLW}
+	@echo -e ${CL_YLW}"...........................Its Done........Getcha Some..........................."${CL_YLW}
+	@echo -e ${CL_YLW}"...........................Steady Fucking Breaking Shit.........................."${CL_YLW}
 	@echo -e ${CL_RST}""${CL_RST}
 	@echo -e ${CL_BLU}"================================================================================="${CL_BLU}
 	@echo -e ${CL_RST}"$(BROKEN_TARGET_PACKAGE)"${CL_RST}
