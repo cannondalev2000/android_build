@@ -43,7 +43,6 @@ PRODUCT_PACKAGES += \
     DefaultContainerService \
     SettingsProvider \
     Shell \
-    bcc \
     bu \
     com.android.location.provider \
     com.android.location.provider.xml \

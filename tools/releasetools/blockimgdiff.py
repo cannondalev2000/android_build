@@ -16,7 +16,6 @@ from __future__ import print_function
 
 from collections import deque, OrderedDict
 from hashlib import sha1
-import heapq
 import itertools
 import multiprocessing
 import os
@@ -143,15 +142,8 @@ class Transfer(object):
     self.goes_before = {}
     self.goes_after = {}
 
-    self.stash_before = []
-    self.use_stash = []
-
     self.id = len(by_id)
     by_id.append(self)
-
-  def NetStashChange(self):
-    return (sum(sr.size() for (_, sr) in self.stash_before) -
-            sum(sr.size() for (_, sr) in self.use_stash))
 
   def __str__(self):
     return (str(self.id) + ": <" + str(self.src_ranges) + " " + self.style +
@@ -190,14 +182,11 @@ class Transfer(object):
 # original image.
 
 class BlockImageDiff(object):
-  def __init__(self, tgt, src=None, threads=None, version=2):
+  def __init__(self, tgt, src=None, threads=None):
     if threads is None:
       threads = multiprocessing.cpu_count() // 2
       if threads == 0: threads = 1
     self.threads = threads
-    self.version = version
-
-    assert version in (1, 2)
 
     self.tgt = tgt
     if src is None:
@@ -232,12 +221,7 @@ class BlockImageDiff(object):
     self.FindVertexSequence()
     # Fix up the ordering dependencies that the sequence didn't
     # satisfy.
-    if self.version == 1:
-      self.RemoveBackwardEdges()
-    else:
-      self.ReverseBackwardEdges()
-      self.ImproveVertexSequence()
-
+    self.RemoveBackwardEdges()
     # Double-check our work.
     self.AssertSequenceGood()
 
@@ -247,87 +231,18 @@ class BlockImageDiff(object):
   def WriteTransfers(self, prefix):
     out = []
 
+    out.append("1\n")   # format version number
     total = 0
     performs_read = False
 
-    stashes = {}
-    stashed_blocks = 0
-    max_stashed_blocks = 0
-
-    free_stash_ids = []
-    next_stash_id = 0
-
     for xf in self.transfers:
 
-      if self.version < 2:
-        assert not xf.stash_before
-        assert not xf.use_stash
-
-      for s, sr in xf.stash_before:
-        assert s not in stashes
-        if free_stash_ids:
-          sid = heapq.heappop(free_stash_ids)
-        else:
-          sid = next_stash_id
-          next_stash_id += 1
-        stashes[s] = sid
-        stashed_blocks += sr.size()
-        out.append("stash %d %s\n" % (sid, sr.to_string_raw()))
-
-      if stashed_blocks > max_stashed_blocks:
-        max_stashed_blocks = stashed_blocks
-
-      if self.version == 1:
-        src_string = xf.src_ranges.to_string_raw()
-      elif self.version == 2:
-
-        #   <# blocks> <src ranges>
-        #     OR
-        #   <# blocks> <src ranges> <src locs> <stash refs...>
-        #     OR
-        #   <# blocks> - <stash refs...>
-
-        size = xf.src_ranges.size()
-        src_string = [str(size)]
-
-        unstashed_src_ranges = xf.src_ranges
-        mapped_stashes = []
-        for s, sr in xf.use_stash:
-          sid = stashes.pop(s)
-          stashed_blocks -= sr.size()
-          unstashed_src_ranges = unstashed_src_ranges.subtract(sr)
-          sr = xf.src_ranges.map_within(sr)
-          mapped_stashes.append(sr)
-          src_string.append("%d:%s" % (sid, sr.to_string_raw()))
-          heapq.heappush(free_stash_ids, sid)
-
-        if unstashed_src_ranges:
-          src_string.insert(1, unstashed_src_ranges.to_string_raw())
-          if xf.use_stash:
-            mapped_unstashed = xf.src_ranges.map_within(unstashed_src_ranges)
-            src_string.insert(2, mapped_unstashed.to_string_raw())
-            mapped_stashes.append(mapped_unstashed)
-            self.AssertPartition(RangeSet(data=(0, size)), mapped_stashes)
-        else:
-          src_string.insert(1, "-")
-          self.AssertPartition(RangeSet(data=(0, size)), mapped_stashes)
-
-        src_string = " ".join(src_string)
-
-      # both versions:
-      #   zero <rangeset>
-      #   new <rangeset>
-      #   erase <rangeset>
-      #
-      # version 1:
-      #   bsdiff patchstart patchlen <src rangeset> <tgt rangeset>
-      #   imgdiff patchstart patchlen <src rangeset> <tgt rangeset>
-      #   move <src rangeset> <tgt rangeset>
-      #
-      # version 2:
-      #   bsdiff patchstart patchlen <tgt rangeset> <src_string>
-      #   imgdiff patchstart patchlen <tgt rangeset> <src_string>
-      #   move <tgt rangeset> <src_string>
+      # zero [rangeset]
+      # new [rangeset]
+      # bsdiff patchstart patchlen [src rangeset] [tgt rangeset]
+      # imgdiff patchstart patchlen [src rangeset] [tgt rangeset]
+      # move [src rangeset] [tgt rangeset]
+      # erase [rangeset]
 
       tgt_size = xf.tgt_ranges.size()
 
@@ -340,27 +255,17 @@ class BlockImageDiff(object):
         assert xf.tgt_ranges
         assert xf.src_ranges.size() == tgt_size
         if xf.src_ranges != xf.tgt_ranges:
-          if self.version == 1:
-            out.append("%s %s %s\n" % (
-                xf.style,
-                xf.src_ranges.to_string_raw(), xf.tgt_ranges.to_string_raw()))
-          elif self.version == 2:
-            out.append("%s %s %s\n" % (
-                xf.style,
-                xf.tgt_ranges.to_string_raw(), src_string))
+          out.append("%s %s %s\n" % (
+              xf.style,
+              xf.src_ranges.to_string_raw(), xf.tgt_ranges.to_string_raw()))
           total += tgt_size
       elif xf.style in ("bsdiff", "imgdiff"):
         performs_read = True
         assert xf.tgt_ranges
         assert xf.src_ranges
-        if self.version == 1:
-          out.append("%s %d %d %s %s\n" % (
-              xf.style, xf.patch_start, xf.patch_len,
-              xf.src_ranges.to_string_raw(), xf.tgt_ranges.to_string_raw()))
-        elif self.version == 2:
-          out.append("%s %d %d %s %s\n" % (
-              xf.style, xf.patch_start, xf.patch_len,
-              xf.tgt_ranges.to_string_raw(), src_string))
+        out.append("%s %d %d %s %s\n" % (
+            xf.style, xf.patch_start, xf.patch_len,
+            xf.src_ranges.to_string_raw(), xf.tgt_ranges.to_string_raw()))
         total += tgt_size
       elif xf.style == "zero":
         assert xf.tgt_ranges
@@ -371,10 +276,7 @@ class BlockImageDiff(object):
       else:
         raise ValueError, "unknown transfer style '%s'\n" % (xf.style,)
 
-
-      # sanity check: abort if we're going to need more than 512 MB if
-      # stash space
-      assert max_stashed_blocks * self.tgt.blocksize < (512 << 20)
+    out.insert(1, str(total) + "\n")
 
     all_tgt = RangeSet(data=(0, self.tgt.total_blocks))
     if performs_read:
@@ -387,23 +289,11 @@ class BlockImageDiff(object):
     else:
       # if nothing is read (ie, this is a full OTA), then we can start
       # by erasing the entire partition.
-      out.insert(0, "erase %s\n" % (all_tgt.to_string_raw(),))
-
-    out.insert(0, "%d\n" % (self.version,))   # format version number
-    out.insert(1, str(total) + "\n")
-    if self.version >= 2:
-      # version 2 only: after the total block count, we give the number
-      # of stash slots needed, and the maximum size needed (in blocks)
-      out.insert(2, str(next_stash_id) + "\n")
-      out.insert(3, str(max_stashed_blocks) + "\n")
+      out.insert(2, "erase %s\n" % (all_tgt.to_string_raw(),))
 
     with open(prefix + ".transfer.list", "wb") as f:
       for i in out:
         f.write(i)
-
-    if self.version >= 2:
-      print("max stashed blocks: %d  (%d bytes)\n" % (
-          max_stashed_blocks, max_stashed_blocks * self.tgt.blocksize))
 
   def ComputePatches(self, prefix):
     print("Reticulating splines...")
@@ -519,13 +409,7 @@ class BlockImageDiff(object):
     # Imagine processing the transfers in order.
     for xf in self.transfers:
       # Check that the input blocks for this transfer haven't yet been touched.
-
-      x = xf.src_ranges
-      if self.version >= 2:
-        for _, sr in xf.use_stash:
-          x = x.subtract(sr)
-
-      assert not touched.overlaps(x)
+      assert not touched.overlaps(xf.src_ranges)
       # Check that the output blocks for this transfer haven't yet been touched.
       assert not touched.overlaps(xf.tgt_ranges)
       # Touch all the blocks written by this transfer.
@@ -534,47 +418,6 @@ class BlockImageDiff(object):
     # Check that we've written every target block.
     assert touched == self.tgt.care_map
 
-  def ImproveVertexSequence(self):
-    print("Improving vertex order...")
-
-    # At this point our digraph is acyclic; we reversed any edges that
-    # were backwards in the heuristically-generated sequence.  The
-    # previously-generated order is still acceptable, but we hope to
-    # find a better order that needs less memory for stashed data.
-    # Now we do a topological sort to generate a new vertex order,
-    # using a greedy algorithm to choose which vertex goes next
-    # whenever we have a choice.
-
-    # Make a copy of the edge set; this copy will get destroyed by the
-    # algorithm.
-    for xf in self.transfers:
-      xf.incoming = xf.goes_after.copy()
-      xf.outgoing = xf.goes_before.copy()
-
-    L = []   # the new vertex order
-
-    # S is the set of sources in the remaining graph; we always choose
-    # the one that leaves the least amount of stashed data after it's
-    # executed.
-    S = [(u.NetStashChange(), u.order, u) for u in self.transfers
-         if not u.incoming]
-    heapq.heapify(S)
-
-    while S:
-      _, _, xf = heapq.heappop(S)
-      L.append(xf)
-      for u in xf.outgoing:
-        del u.incoming[xf]
-        if not u.incoming:
-          heapq.heappush(S, (u.NetStashChange(), u.order, u))
-
-    # if this fails then our graph had a cycle.
-    assert len(L) == len(self.transfers)
-
-    self.transfers = L
-    for i, xf in enumerate(L):
-      xf.order = i
-
   def RemoveBackwardEdges(self):
     print("Removing backward edges...")
     in_order = 0
@@ -582,17 +425,19 @@ class BlockImageDiff(object):
     lost_source = 0
 
     for xf in self.transfers:
+      io = 0
+      ooo = 0
       lost = 0
       size = xf.src_ranges.size()
       for u in xf.goes_before:
         # xf should go before u
         if xf.order < u.order:
           # it does, hurray!
-          in_order += 1
+          io += 1
         else:
           # it doesn't, boo.  trim the blocks that u writes from xf's
           # source, so that xf can go after u.
-          out_of_order += 1
+          ooo += 1
           assert xf.src_ranges.overlaps(u.tgt_ranges)
           xf.src_ranges = xf.src_ranges.subtract(u.tgt_ranges)
           xf.intact = False
@@ -603,6 +448,8 @@ class BlockImageDiff(object):
 
       lost = size - xf.src_ranges.size()
       lost_source += lost
+      in_order += io
+      out_of_order += ooo
 
     print(("  %d/%d dependencies (%.2f%%) were violated; "
            "%d source blocks removed.") %
@@ -610,48 +457,6 @@ class BlockImageDiff(object):
            (out_of_order * 100.0 / (in_order + out_of_order))
            if (in_order + out_of_order) else 0.0,
            lost_source))
-
-  def ReverseBackwardEdges(self):
-    print("Reversing backward edges...")
-    in_order = 0
-    out_of_order = 0
-    stashes = 0
-    stash_size = 0
-
-    for xf in self.transfers:
-      lost = 0
-      size = xf.src_ranges.size()
-      for u in xf.goes_before.copy():
-        # xf should go before u
-        if xf.order < u.order:
-          # it does, hurray!
-          in_order += 1
-        else:
-          # it doesn't, boo.  modify u to stash the blocks that it
-          # writes that xf wants to read, and then require u to go
-          # before xf.
-          out_of_order += 1
-
-          overlap = xf.src_ranges.intersect(u.tgt_ranges)
-          assert overlap
-
-          u.stash_before.append((stashes, overlap))
-          xf.use_stash.append((stashes, overlap))
-          stashes += 1
-          stash_size += overlap.size()
-
-          # reverse the edge direction; now xf must go after u
-          del xf.goes_before[u]
-          del u.goes_after[xf]
-          xf.goes_after[u] = None    # value doesn't matter
-          u.goes_before[xf] = None
-
-    print(("  %d/%d dependencies (%.2f%%) were violated; "
-           "%d source blocks stashed.") %
-          (out_of_order, in_order + out_of_order,
-           (out_of_order * 100.0 / (in_order + out_of_order))
-           if (in_order + out_of_order) else 0.0,
-           stash_size))
 
   def FindVertexSequence(self):
     print("Finding vertex sequence...")

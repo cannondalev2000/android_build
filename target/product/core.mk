@@ -15,10 +15,9 @@
 #
 
 # Base configuration for communication-oriented android devices
-# (phones, tablets, etc.).  If you want a change to apply to ALMOST ALL
+# (phones, tablets, etc.).  If you want a change to apply to ALL
 # devices (including non-phones and non-tablets), modify
-# core_minimal.mk instead. If you care about wearables, you need to modify
-# core_tiny.mk in addition to core_minimal.mk.
+# core_minimal.mk instead.
 
 PRODUCT_PACKAGES += \
     BasicDreams \
