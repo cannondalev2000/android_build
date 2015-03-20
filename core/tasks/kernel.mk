@@ -152,12 +152,6 @@ else
 KERNEL_TOOLCHAIN_PREFIX := $(TARGET_KERNEL_CROSS_COMPILE_PREFIX)
 endif
 
-ifneq ($(USE_CCACHE),)
-    ccache := $(ANDROID_BUILD_TOP)/prebuilts/misc/$(HOST_PREBUILT_TAG)/ccache/ccache
-    # Check that the executable is here.
-    ccache := $(strip $(wildcard $(ccache)))
-endif
-
 ifeq ($(KERNEL_TOOLCHAIN),)
 KERNEL_TOOLCHAIN_PATH := $(KERNEL_TOOLCHAIN_PREFIX)
 else
@@ -166,25 +160,13 @@ KERNEL_TOOLCHAIN_PATH := $(KERNEL_TOOLCHAIN)/$(KERNEL_TOOLCHAIN_PREFIX)
 endif
 endif
 
-ifneq ($(TARGET_KERNEL_CUSTOM_TOOLCHAIN),)
-        ifeq ($(HOST_OS),darwin)
-            ARM_CROSS_COMPILE:=CROSS_COMPILE="$(ccache) $(ANDROID_BUILD_TOP)/prebuilts/darwin-x86/arm/$(TARGET_KERNEL_CUSTOM_TOOLCHAIN)"
-        else
-            ARM_CROSS_COMPILE:=CROSS_COMPILE="$(ccache) $(ANDROID_BUILD_TOP)/prebuilts/linux-x86/arm/$(TARGET_KERNEL_CUSTOM_TOOLCHAIN)"
-        endif
-    else
-        ARM_CROSS_COMPILE:=CROSS_COMPILE="$(ccache) $(ARM_EABI_TOOLCHAIN)/arm-eabi-"
-    endif
+ifneq ($(USE_CCACHE),)
+    ccache := $(ANDROID_BUILD_TOP)/prebuilts/misc/$(HOST_PREBUILT_TAG)/ccache/ccache
+    # Check that the executable is here.
+    ccache := $(strip $(wildcard $(ccache)))
+endif
 
-    ifneq ($(TARGET_GCC_VERSION_ARM),)
-      ifeq ($(HOST_OS),darwin)
-        ARM_CROSS_COMPILE:=CROSS_COMPILE="$(ccache) $(ANDROID_BUILD_TOP)/prebuilts/gcc/darwin-x86/arm/arm-eabi-$(TARGET_GCC_VERSION_ARM)/bin/arm-eabi-"
-      else
-        ARM_CROSS_COMPILE:=CROSS_COMPILE="$(ccache) $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-eabi-$(TARGET_GCC_VERSION_ARM)/bin/arm-eabi-"
-      endif
-    else
-      ARM_CROSS_COMPILE:=CROSS_COMPILE="$(ccache) $(ARM_EABI_TOOLCHAIN)/arm-eabi-"
-    endif
+KERNEL_CROSS_COMPILE := CROSS_COMPILE="$(ccache) $(KERNEL_TOOLCHAIN_PATH)"
 ccache =
 
 define mv-modules
