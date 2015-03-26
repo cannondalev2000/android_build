@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Copyright (C) 2012 The CyanogenMod Project
-# Copyright (C) 2012/2013 BrokenOs Project
+# Copyright (C) 2012/2013 BrokenRoms Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,13 +34,13 @@ except:
     device = product
 
 if not depsonly:
-    print "Device %s not found. Attempting to retrieve device repository from BrokenOs Github (http://github.com/BrokenOs)." % device
+    print "Device %s not found. Attempting to retrieve device repository from BrokenRoms Github (http://github.com/BrokenRoms)." % device
 
 repositories = []
 
 page = 1
 while not depsonly:
-    result = json.loads(urllib2.urlopen("https://api.github.com/users/BrokenOs/repos?page=%d" % page).read())
+    result = json.loads(urllib2.urlopen("https://api.github.com/users/BrokenRoms/repos?page=%d" % page).read())
     if len(result) == 0:
         break
     for res in result:
@@ -131,7 +131,7 @@ def add_to_manifest_dependencies(repositories):
                 print 'Updating dependency %s' % (repo_name)
                 existing_project.set('name', repository['repository'])
             if existing_project.attrib['revision'] == repository['branch']:
-                print 'BrokenOs/%s already exists' % (repo_name)
+                print 'BrokenRoms/%s already exists' % (repo_name)
             else:
                 print 'updating branch for %s to %s' % (repo_name, repository['branch'])
                 existing_project.set('revision', repository['branch'])
@@ -139,7 +139,7 @@ def add_to_manifest_dependencies(repositories):
 
         print 'Adding dependency: %s -> %s' % (repo_name, repo_target)
         project = ElementTree.Element("project", attrib = { "path": repo_target,
-            "remote": "github", "name": repo_name, "revision": "lp" })
+            "remote": "github", "name": repo_name, "revision": "lp5.1" })
 
         if 'branch' in repository:
             project.set('revision',repository['branch'])
@@ -167,15 +167,15 @@ def add_to_manifest(repositories):
         existing_project = exists_in_tree_device(lm, repo_name)
         if existing_project != None:
             if existing_project.attrib['revision'] == repository['branch']:
-                print 'BrokenOs/%s already exists' % (repo_name)
+                print 'BrokenRoms/%s already exists' % (repo_name)
             else:
-                print 'updating branch for BrokenOs/%s to %s' % (repo_name, repository['branch'])
+                print 'updating branch for BrokenRoms/%s to %s' % (repo_name, repository['branch'])
                 existing_project.set('revision', repository['branch'])
             continue
 
-        print 'Adding dependency: BrokenOs/%s -> %s' % (repo_name, repo_target)
+        print 'Adding dependency: BrokenRoms/%s -> %s' % (repo_name, repo_target)
         project = ElementTree.Element("project", attrib = { "path": repo_target,
-            "remote": "github", "name": "BrokenOs/%s" % repo_name, "revision": "lp" })
+            "remote": "github", "name": "BrokenRoms/%s" % repo_name, "revision": "lp5.1" })
 
         if 'branch' in repository:
             project.set('revision', repository['branch'])
@@ -235,7 +235,7 @@ else:
 
             repo_path = "device/%s/%s" % (manufacturer, device)
 
-            add_to_manifest([{'repository':repo_name,'target_path':repo_path,'branch':'lp'}])
+            add_to_manifest([{'repository':repo_name,'target_path':repo_path,'branch':'lp5.1'}])
 
             print "Syncing repository to retrieve project."
             os.system('repo sync %s' % repo_path)
@@ -245,4 +245,4 @@ else:
             print "Done"
             sys.exit()
 
-print "Repository for %s not found in the BrokenOs Github repository list. If this is in error, you may need to manually add it to .repo/local_manifests/broken_manifest.xml" % device
+print "Repository for %s not found in the BrokenRoms Github repository list. If this is in error, you may need to manually add it to .repo/local_manifests/broken_manifest.xml" % device
