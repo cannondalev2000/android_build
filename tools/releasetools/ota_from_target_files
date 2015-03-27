@@ -607,7 +607,7 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
   script.Print(" .| / \___/_/..|   /   \ |..|  \ ____/... ")
   script.Print(" .|___|.........\__/____/...|__/|........ ")
   script.Print(" ..A Custom.....//.........BrokenOs...... ")
-  script.Print(" ..AOSP.Based..//.........Android 5.0.... ")
+  script.Print(" ..AOSP.Based..//.........Android 5.1.... ")
   script.Print(" ..ROM........//...........Lollipop...... ")
   script.Print(" **********Dysfunctional**ROMs*********** ")
   script.Print(" ")
