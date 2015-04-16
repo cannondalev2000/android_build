@@ -1905,7 +1905,7 @@ function brokenremote()
 
     PROJECT="$(echo $PROJ | sed 's/\//_/g')"
 
-    git remote add broken git@github.com:BrokenOs/$PFX$PROJECT
+    git remote add broken git@github.com:BrokenROM/$PFX$PROJECT
     echo "Remote 'broken' created"
     fi
 }
